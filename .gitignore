@@ -1,0 +1,23 @@
+# Data — ignore all files in data/
+data/
+data/*
+*.h5
+*.h5.gz
+*.tar.gz
+
+# Logs and Checkpoints
+logs/
+checkpoints/
+output/
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Virtual Environment
+venv/
+.env
+
+# IDEs
+.vscode/
+.idea/
+.DS_Store
