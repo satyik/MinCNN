@@ -333,7 +333,7 @@ def main():
     parser.add_argument("--resume", type=str, default=None,
                         help="Path to checkpoint to resume from")
     parser.add_argument("--workers", type=int, default=2)
-    parser.add_argument("--data-dir", type=str, default=".", 
+    parser.add_argument("--data-dir", type=str, default=config.DATA_DIR, 
                         help="Directory containing .h5 or .h5.gz files")
     parser.add_argument("--subset", type=int, default=None,
                         help="Train on a small subset of data (e.g. 1000) for debugging")

@@ -38,15 +38,13 @@ class ISNorm(nn.Module):
         self.eps = eps
         self.momentum = momentum
 
-        # Running statistics (shared across all iterations)
-        self.register_buffer("running_mean", torch.zeros(num_features))
-        self.register_buffer("running_var", torch.ones(num_features))
-        self.register_buffer("num_batches_tracked", torch.tensor(0, dtype=torch.long))
-
-        # Per-iteration affine parameters: γ_t and β_t
-        # Shape: (T, C) — each row is one iteration's parameters
-        self.gamma = nn.Parameter(torch.ones(num_iterations, num_features))
-        self.beta = nn.Parameter(torch.zeros(num_iterations, num_features))
+        # Use separate BatchNorm2d for each iteration to maintain separate running stats.
+        # This prevents "concept drift" across iterations from ruining the running mean/var.
+        # Parameter count is identical (T * 2 * C), but memory for buffers increases.
+        self.bns = nn.ModuleList([
+            nn.BatchNorm2d(num_features, eps=eps, momentum=momentum)
+            for _ in range(num_iterations)
+        ])
 
     def forward(self, x: torch.Tensor, t: int) -> torch.Tensor:
         """
@@ -55,27 +53,10 @@ class ISNorm(nn.Module):
             t: Current recursion iteration index (0-indexed, must be < T).
 
         Returns:
-            Normalized and affine-transformed tensor of same shape.
+            Normalized and affine-transformed tensor.
         """
-        assert 0 <= t < self.num_iterations, (
-            f"Iteration index {t} out of range [0, {self.num_iterations})"
-        )
-
-        if self.training:
-            self.num_batches_tracked += 1
-
-        # Use fused F.batch_norm — handles mean/var computation in C++
-        # Pass iteration-specific affine params directly
-        return F.batch_norm(
-            x,
-            self.running_mean,
-            self.running_var,
-            weight=self.gamma[t],     # γ_t
-            bias=self.beta[t],        # β_t
-            training=self.training,
-            momentum=self.momentum,
-            eps=self.eps,
-        )
+        # Select the specific BN layer for this iteration
+        return self.bns[t](x)
 
     def extra_repr(self) -> str:
         return (

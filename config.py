@@ -14,7 +14,7 @@ import os
 # ──────────────────────────────────────────────
 # Model Variant (select one: "base" or "deep")
 # ──────────────────────────────────────────────
-MODEL_VARIANT = "deep"
+MODEL_VARIANT = "base"
 
 # ──────────────────────────────────────────────
 # Architecture

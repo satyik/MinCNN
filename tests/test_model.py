@@ -191,9 +191,9 @@ def test_gradient_flow(device):
         "SymmetricConv grad is all zeros"
     )
 
-    assert block.is_norm.gamma.grad is not None, "IS-Norm gamma grad is None"
-    assert (block.is_norm.gamma.grad.abs() > 0).any(), (
-        "IS-Norm gamma grad is all zeros"
+    assert block.is_norm.bns[0].weight.grad is not None, "IS-Norm weight grad is None"
+    assert (block.is_norm.bns[0].weight.grad.abs() > 0).any(), (
+        "IS-Norm weight grad is all zeros"
     )
 
     # Check shared DW conv gradients
@@ -257,6 +257,48 @@ def test_parameter_breakdown(model):
     # (May differ slightly due to buffers vs parameters)
     assert abs(total_from_breakdown - breakdown["total"]) < 100, (
         f"Breakdown sum {total_from_breakdown:,} != total {breakdown['total']:,}"
+    )
+
+
+
+# ──────────────────────────────────────────────
+# Test 9: IS-Norm Statistics Independence
+# ──────────────────────────────────────────────
+
+def test_is_norm_statistics_independence(device):
+    """Verify that IS-Norm maintains separate running stats for each iteration."""
+    C, T = 10, 3
+    # Momentum 1.0 -> running stats immediately equal batch stats
+    norm = ISNorm(num_features=C, num_iterations=T, momentum=1.0).to(device)
+    norm.train()
+
+    # Input batches with distinct means for each iteration t
+    # t=0 -> mean 0
+    # t=1 -> mean 100
+    # t=2 -> mean 200
+    x = torch.randn(2, C, 1, 1, device=device)
+
+    # Forward pass updates running stats
+    for t in range(T):
+        x_t = x + (t * 100.0)
+        _ = norm(x_t, t)
+    
+    # Switch to eval mode
+    norm.eval()
+
+    # Check t=0
+    # If stats are shared, running_mean would be polluted by t=1,2 (mean ~100 or ~200)
+    # If independent, running_mean for t=0 should be ~0
+    x_0 = x # Mean ~0
+    out_0 = norm(x_0, 0)
+    
+    # Expected output mean should be ~0 (since input matches t=0 training dist)
+    out_mean = out_0.mean().item()
+    
+    print(f"IS-Norm Independence Test: Mean output for t=0: {out_mean:.4f}")
+    assert abs(out_mean) < 1.0, (
+        f"IS-Norm stats leaked! t=0 output mean {out_mean:.4f} is too far from 0. "
+        "Separation of running statistics failed."
     )
 
 
