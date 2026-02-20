@@ -176,7 +176,7 @@ def train_one_epoch_teacher(model, loader, criterion, optimizer, device, epoch, 
 
         batch_acc = accuracy(logits, targets, topk=(1,))[0]
         losses.update(loss.item(), images.size(0))
-        accs.update(batch_acc.item(), images.size(0))
+        accs.update(batch_acc, images.size(0))
 
     return losses.avg, accs.avg
 
@@ -220,7 +220,7 @@ def train_one_epoch_student(model, teacher, loader, kd_criterion, optimizer, dev
         total_losses.update(total_loss.item(), images.size(0))
         hard_losses.update(hard_loss.item(), images.size(0))
         soft_losses.update(soft_loss.item(), images.size(0))
-        accs.update(batch_acc.item(), images.size(0))
+        accs.update(batch_acc, images.size(0))
 
     return total_losses.avg, hard_losses.avg, soft_losses.avg, accs.avg
 
@@ -238,7 +238,7 @@ def evaluate(model, loader, criterion, device):
         loss = criterion(logits, targets)
         batch_acc = accuracy(logits, targets, topk=(1,))[0]
         losses.update(loss.item(), images.size(0))
-        accs.update(batch_acc.item(), images.size(0))
+        accs.update(batch_acc, images.size(0))
 
     return losses.avg, accs.avg
 
