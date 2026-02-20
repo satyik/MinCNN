@@ -154,8 +154,12 @@ def get_dataloaders(batch_size: int, data_dir: str, num_workers: int = 2,
     train_transforms = [
         transforms.RandomHorizontalFlip(),
         transforms.RandomVerticalFlip(),
-        transforms.RandomRotation(90),
-        transforms.ColorJitter(brightness=0.1, contrast=0.1, saturation=0.1, hue=0.05),
+        # Full 360° coverage: RandomRotation(180) maps degrees to [-180, 180],
+        # which combined with the flips above provides uniform 360° coverage.
+        transforms.RandomRotation(180),
+        # Slightly stronger color jitter — histopathology images benefit from
+        # robust colour invariance (stain variation in PCAM).
+        transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.15, hue=0.07),
         transforms.ToTensor(),
         transforms.Normalize(mean, std),
     ]
@@ -327,7 +331,7 @@ def evaluate(model, loader, criterion, device):
 
 def main():
     parser = argparse.ArgumentParser(description="EGRR Training on PCam")
-    parser.add_argument("--epochs", type=int, default=20)
+    parser.add_argument("--epochs", type=int, default=35)
     parser.add_argument("--batch-size", type=int, default=32) # Reduced default from 128 to 32 to fix OOM
     parser.add_argument("--lr", type=float, default=0.01)
     parser.add_argument("--resume", type=str, default=None,
