@@ -174,7 +174,7 @@ def train_one_epoch_teacher(model, loader, criterion, optimizer, device, epoch, 
             loss.backward()
             optimizer.step()
 
-        batch_acc = accuracy(logits, targets)[0]
+        batch_acc = accuracy(logits, targets, topk=(1,))[0]
         losses.update(loss.item(), images.size(0))
         accs.update(batch_acc.item(), images.size(0))
 
@@ -216,7 +216,7 @@ def train_one_epoch_student(model, teacher, loader, kd_criterion, optimizer, dev
             torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
             optimizer.step()
 
-        batch_acc = accuracy(student_logits, targets)[0]
+        batch_acc = accuracy(student_logits, targets, topk=(1,))[0]
         total_losses.update(total_loss.item(), images.size(0))
         hard_losses.update(hard_loss.item(), images.size(0))
         soft_losses.update(soft_loss.item(), images.size(0))
@@ -236,7 +236,7 @@ def evaluate(model, loader, criterion, device):
         images, targets = images.to(device), targets.to(device)
         logits = model(images)
         loss = criterion(logits, targets)
-        batch_acc = accuracy(logits, targets)[0]
+        batch_acc = accuracy(logits, targets, topk=(1,))[0]
         losses.update(loss.item(), images.size(0))
         accs.update(batch_acc.item(), images.size(0))
 
